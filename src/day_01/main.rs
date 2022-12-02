@@ -7,7 +7,7 @@ mod tests {
 
     #[test]
     fn test_input_parsing() {
-        let input = parse_input("./input/day_01/test.txt");
+        let input = parse_input("./src/day_01/test.txt");
         let expected = vec![
             vec![1000, 2000, 3000],
             vec![4000],
@@ -21,13 +21,13 @@ mod tests {
 
     #[test]
     fn part_one() {
-        let input = parse_input("./input/day_01/test.txt");
+        let input = parse_input("./src/day_01/test.txt");
         assert_eq!(most_calories(input), 24000);
     }
 
     #[test]
     fn part_two() {
-        let input = parse_input("./input/day_01/test.txt");
+        let input = parse_input("./src/day_01/test.txt");
         assert_eq!(top_three_calories(input), 45000);
     }
 }

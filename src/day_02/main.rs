@@ -6,19 +6,19 @@ mod tests {
 
     #[test]
     fn input_parsing() {
-        let input = parse_input("./input/day_02/test.txt");
+        let input = parse_input("./src/day_02/test.txt");
         assert_eq!(input, vec![('A', 'Y'), ('B', 'X'), ('C', 'Z')]);
     }
 
     #[test]
     fn day_one() {
-        let input = parse_input("./input/day_02/test.txt");
+        let input = parse_input("./src/day_02/test.txt");
         assert_eq!(play_with_strategy_guide(input), 15);
     }
 
     #[test]
     fn day_two() {
-        let input = parse_input("./input/day_02/test.txt");
+        let input = parse_input("./src/day_02/test.txt");
         assert_eq!(play_with_ultra_top_secret_strategy_guide(input), 12);
     }
 }
