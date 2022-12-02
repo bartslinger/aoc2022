@@ -15,6 +15,12 @@ mod tests {
         let input = parse_input("./input/day_02/test.txt");
         assert_eq!(play_with_strategy_guide(input), 15);
     }
+
+    #[test]
+    fn day_two() {
+        let input = parse_input("./input/day_02/test.txt");
+        assert_eq!(play_with_ultra_top_secret_strategy_guide(input), 12);
+    }
 }
 
 fn parse_input(path: &str) -> Vec<(char, char)> {
@@ -26,6 +32,7 @@ fn parse_input(path: &str) -> Vec<(char, char)> {
 }
 
 fn round_score(input: (char, char)) -> u64 {
+    // X = rock; Y = paper; Z = scissors
     let winning_score = match input {
         ('A', 'X') => 3,
         ('A', 'Y') => 6,
@@ -56,10 +63,40 @@ fn play_with_strategy_guide(input: Vec<(char, char)>) -> u64 {
     input.iter().map(|x| round_score(*x)).sum()
 }
 
+fn get_what_to_play(input: (char, char)) -> char {
+    // X = lose; Y = draw; Z = win
+    match input {
+        ('A', 'X') => 'Z',
+        ('A', 'Y') => 'X',
+        ('A', 'Z') => 'Y',
+
+        ('B', 'X') => 'X',
+        ('B', 'Y') => 'Y',
+        ('B', 'Z') => 'Z',
+
+        ('C', 'X') => 'Y',
+        ('C', 'Y') => 'Z',
+        ('C', 'Z') => 'X',
+
+        _ => panic!(""),
+    }
+}
+
+fn play_with_ultra_top_secret_strategy_guide(input: Vec<(char, char)>) -> u64 {
+    input
+        .into_iter()
+        .map(|x| (x.0, get_what_to_play(x)))
+        .map(|x| round_score(x))
+        .sum()
+}
+
 fn main() {
     println!("Hello, day 2!");
 
     let input = parse_input("./input/day_02/input.txt");
     let score = play_with_strategy_guide(input.clone());
     println!("Part 1: {}", score);
+
+    let score = play_with_ultra_top_secret_strategy_guide(input.clone());
+    println!("Part 2: {}", score);
 }
