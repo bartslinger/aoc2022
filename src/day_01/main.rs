@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::fs;
 
 #[cfg(test)]
@@ -19,9 +20,15 @@ mod tests {
     }
 
     #[test]
-    fn test_part_one() {
+    fn part_one() {
         let input = parse_input("./input/day_01/test.txt");
         assert_eq!(most_calories(input), 24000);
+    }
+
+    #[test]
+    fn part_two() {
+        let input = parse_input("./input/day_01/test.txt");
+        assert_eq!(top_three_calories(input), 45000);
     }
 }
 
@@ -45,10 +52,23 @@ fn most_calories(input: Vec<Vec<u64>>) -> u64 {
         .unwrap()
 }
 
+fn top_three_calories(input: Vec<Vec<u64>>) -> u64 {
+    input
+        .into_iter()
+        .map(|x| x.into_iter().sum::<u64>())
+        .sorted()
+        .rev()
+        .take(3)
+        .sum()
+}
+
 fn main() {
     println!("Hello, day 1!");
 
     let input = parse_input("./input/day_01/input.txt");
-    let most_calories = most_calories(input);
+    let most_calories = most_calories(input.clone());
     println!("Part 1: {}", most_calories);
+
+    let top_three = top_three_calories(input);
+    println!("Part 2: {}", top_three);
 }
