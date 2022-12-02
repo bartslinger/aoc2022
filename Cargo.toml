@@ -3,4 +3,8 @@ name = "aoc2022"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "day_01"
+path = "src/day_01/main.rs"
+
 [dependencies]
