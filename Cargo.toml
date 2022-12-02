@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "day_01"
-path = "src/day_01/main.rs"
+name = "01"
+path = "src/01/main.rs"
 
 [[bin]]
-name = "day_02"
-path = "src/day_02/main.rs"
+name = "02"
+path = "src/02/main.rs"
 
 [dependencies]
 itertools = "0.10.5"
