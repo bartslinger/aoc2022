@@ -1,5 +1,7 @@
 use std::fs;
 
+use itertools::Itertools;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -25,10 +27,28 @@ mod tests {
 
         assert_eq!(sum_of_priorities(&rucksacks), 157);
     }
+
+    #[test]
+    fn part_two() {
+        let input = fs::read_to_string("./src/03/test.txt").unwrap();
+        let groups = parse_input_as_groups(&input);
+
+        assert_eq!(sum_of_group_badges(groups), 70);
+    }
 }
 
 fn parse_input(input: &str) -> Vec<&str> {
     input.lines().collect()
+}
+
+fn parse_input_as_groups(input: &str) -> Vec<(&str, &str, &str)> {
+    let groups = input
+        .lines()
+        .chunks(3)
+        .into_iter()
+        .map(|mut x| (x.next().unwrap(), x.next().unwrap(), x.next().unwrap()))
+        .collect();
+    groups
 }
 
 fn find_duplicate_item(rucksack: &str) -> char {
@@ -51,6 +71,24 @@ fn priority(item: char) -> u8 {
     }
 }
 
+fn find_badge(group: (&str, &str, &str)) -> char {
+    // Loop through the items in the first rucksack and see if they exist in the other two
+    for item in group.0.chars() {
+        if group.1.contains(item) && group.2.contains(item) {
+            return item;
+        }
+    }
+    panic!("could not find badge")
+}
+
+fn sum_of_group_badges(groups: Vec<(&str, &str, &str)>) -> u64 {
+    groups
+        .iter()
+        .map(|group| find_badge(*group))
+        .map(|badge| priority(badge) as u64)
+        .sum()
+}
+
 fn sum_of_priorities(rucksacks: &Vec<&str>) -> u64 {
     rucksacks
         .iter()
@@ -66,4 +104,8 @@ fn main() {
     let rucksacks = parse_input(&input);
     let sum = sum_of_priorities(&rucksacks);
     println!("Part 1: {}", sum);
+
+    let groups = parse_input_as_groups(&input);
+    let sum = sum_of_group_badges(groups);
+    println!("Part 2: {}", sum);
 }
