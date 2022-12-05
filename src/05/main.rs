@@ -1,5 +1,3 @@
-use std::fs;
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -23,11 +21,19 @@ mod tests {
     #[test]
     fn part_one() {
         let (stacks, moves) = parse_input("./src/05/test.txt");
-        assert_eq!(find_top_crates_naive(stacks, moves), vec!['C', 'M', 'Z']);
+        let arranged = arrange_with_silly_crate_mover_9000(stacks, moves);
+        assert_eq!(get_top_crates(arranged), "CMZ");
+    }
+
+    #[test]
+    fn part_two() {
+        let (stacks, moves) = parse_input("./src/05/test.txt");
+        let arranged = arrange_with_crate_mover_9001(stacks, moves);
+        assert_eq!(get_top_crates(arranged), "MCD");
     }
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 struct Move {
     number: usize,
     from: usize,
@@ -73,21 +79,47 @@ fn parse_moves(input: &str) -> Vec<Move> {
         .collect()
 }
 
-fn find_top_crates_naive(mut stacks: Vec<Vec<char>>, moves: Vec<Move>) -> Vec<char> {
+fn get_top_crates(stacks: Vec<Vec<char>>) -> String {
+    stacks.into_iter().map(|s| *s.last().unwrap()).collect()
+}
+
+fn arrange_with_silly_crate_mover_9000(
+    mut stacks: Vec<Vec<char>>,
+    moves: Vec<Move>,
+) -> Vec<Vec<char>> {
     for mov in moves {
         for _ in 0..mov.number {
             let item = stacks.get_mut(mov.from - 1).unwrap().pop().unwrap();
             stacks.get_mut(mov.to - 1).unwrap().push(item);
         }
     }
-    // Return items on top
-    stacks.into_iter().map(|s| *s.last().unwrap()).collect()
+    stacks
+}
+
+fn arrange_with_crate_mover_9001(mut stacks: Vec<Vec<char>>, moves: Vec<Move>) -> Vec<Vec<char>> {
+    let mut buffer = vec![];
+    for mov in moves {
+        for _ in 0..mov.number {
+            let item = stacks.get_mut(mov.from - 1).unwrap().pop().unwrap();
+            buffer.push(item);
+        }
+        for _ in 0..mov.number {
+            let item = buffer.pop().unwrap();
+            stacks.get_mut(mov.to - 1).unwrap().push(item);
+        }
+    }
+    stacks
 }
 
 fn main() {
     println!("Hello, day 5!");
 
     let (stacks, moves) = parse_input("./input/05/input.txt");
-    let top_crates: String = find_top_crates_naive(stacks, moves).into_iter().collect();
+    let arranged = arrange_with_silly_crate_mover_9000(stacks.clone(), moves.clone());
+    let top_crates = get_top_crates(arranged);
     println!("Part 1: {}", top_crates);
+
+    let arranged = arrange_with_crate_mover_9001(stacks, moves);
+    let top_crates = get_top_crates(arranged);
+    println!("Part 2: {}", top_crates);
 }
