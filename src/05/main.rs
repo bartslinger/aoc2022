@@ -19,6 +19,12 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn part_one() {
+        let (stacks, moves) = parse_input("./src/05/test.txt");
+        assert_eq!(find_top_crates_naive(stacks, moves), vec!['C', 'M', 'Z']);
+    }
 }
 
 #[derive(Eq, PartialEq, Debug)]
@@ -67,8 +73,21 @@ fn parse_moves(input: &str) -> Vec<Move> {
         .collect()
 }
 
+fn find_top_crates_naive(mut stacks: Vec<Vec<char>>, moves: Vec<Move>) -> Vec<char> {
+    for mov in moves {
+        for _ in 0..mov.number {
+            let item = stacks.get_mut(mov.from - 1).unwrap().pop().unwrap();
+            stacks.get_mut(mov.to - 1).unwrap().push(item);
+        }
+    }
+    // Return items on top
+    stacks.into_iter().map(|s| *s.last().unwrap()).collect()
+}
+
 fn main() {
     println!("Hello, day 5!");
 
     let (stacks, moves) = parse_input("./input/05/input.txt");
+    let top_crates: String = find_top_crates_naive(stacks, moves).into_iter().collect();
+    println!("Part 1: {}", top_crates);
 }
