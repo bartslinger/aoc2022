@@ -1,3 +1,4 @@
+use itertools::Itertools;
 // use petgraph::dot::{Config, Dot};
 use petgraph::graph::NodeIndex;
 use petgraph::{Direction, Graph};
@@ -5,13 +6,6 @@ use petgraph::{Direction, Graph};
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn node_index(graph: &Graph<Type, i32>, name: &str) -> NodeIndex {
-        graph
-            .node_indices()
-            .find(|i| graph.node_weight(*i).unwrap() == &Type::Dir(name.to_string()))
-            .unwrap()
-    }
 
     #[test]
     fn calculate_dir_sizes() {
@@ -30,6 +24,12 @@ mod tests {
     fn test_part_one() {
         let graph = parse_input("./src/07/test.txt");
         assert_eq!(part_one(&graph), 95437);
+    }
+
+    #[test]
+    fn test_part_two() {
+        let graph = parse_input("./src/07/test.txt");
+        assert_eq!(smallest_directory_to_delete(&graph), 24933642);
     }
 }
 
@@ -83,6 +83,13 @@ fn parse_input(path: &str) -> Graph<Type, i32> {
     graph
 }
 
+fn node_index(graph: &Graph<Type, i32>, name: &str) -> NodeIndex {
+    graph
+        .node_indices()
+        .find(|i| graph.node_weight(*i).unwrap() == &Type::Dir(name.to_string()))
+        .unwrap()
+}
+
 fn dir_size(graph: &Graph<Type, i32>, node: NodeIndex) -> usize {
     let children = graph.neighbors_directed(node, Direction::Outgoing);
     let mut total = 0;
@@ -112,10 +119,32 @@ fn part_one(graph: &Graph<Type, i32>) -> usize {
         .sum()
 }
 
+fn smallest_directory_to_delete(graph: &Graph<Type, i32>) -> usize {
+    let root = node_index(graph, "/");
+    let max_allowed = 40000000;
+    let used = dir_size(graph, root);
+    let to_free = used - max_allowed;
+
+    graph
+        .node_indices()
+        .filter(|i| {
+            let node = graph.node_weight(*i).unwrap();
+            matches!(node, Type::Dir(_))
+        })
+        .map(|i| (dir_size(graph, i), i))
+        .map(|(size, _)| size)
+        .sorted()
+        .find(|size| *size >= to_free)
+        .unwrap()
+}
+
 fn main() {
     println!("Hello, day 7!");
 
     let graph = parse_input("./input/07/input.txt");
     let part_one_sum = part_one(&graph);
     println!("Part 1: {}", part_one_sum);
+
+    let part_two = smallest_directory_to_delete(&graph);
+    println!("Part 2: {}", part_two);
 }
