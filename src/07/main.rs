@@ -25,6 +25,12 @@ mod tests {
         assert_eq!(dir_size(&graph, d), 24933642);
         assert_eq!(dir_size(&graph, root), 48381165);
     }
+
+    #[test]
+    fn test_part_one() {
+        let graph = parse_input("./src/07/test.txt");
+        assert_eq!(part_one(&graph), 95437);
+    }
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -94,6 +100,22 @@ fn dir_size(graph: &Graph<Type, i32>, node: NodeIndex) -> usize {
     total
 }
 
+fn part_one(graph: &Graph<Type, i32>) -> usize {
+    graph
+        .node_indices()
+        .filter(|i| {
+            let node = graph.node_weight(*i).unwrap();
+            matches!(node, Type::Dir(_))
+        })
+        .map(|i| dir_size(graph, i))
+        .filter(|size| *size <= 100000)
+        .sum()
+}
+
 fn main() {
     println!("Hello, day 7!");
+
+    let graph = parse_input("./input/07/input.txt");
+    let part_one_sum = part_one(&graph);
+    println!("Part 1: {}", part_one_sum);
 }
