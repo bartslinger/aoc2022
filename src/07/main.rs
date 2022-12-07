@@ -1,15 +1,29 @@
-use petgraph::dot::{Config, Dot};
+// use petgraph::dot::{Config, Dot};
+use petgraph::graph::NodeIndex;
 use petgraph::{Direction, Graph};
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    fn node_index(graph: &Graph<Type, i32>, name: &str) -> NodeIndex {
+        graph
+            .node_indices()
+            .find(|i| graph.node_weight(*i).unwrap() == &Type::Dir(name.to_string()))
+            .unwrap()
+    }
+
     #[test]
-    fn test_input_parsing() {
+    fn calculate_dir_sizes() {
         let graph = parse_input("./src/07/test.txt");
-        println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
-        assert!(false);
+        let e = node_index(&graph, "e");
+        let a = node_index(&graph, "a");
+        let d = node_index(&graph, "d");
+        let root = node_index(&graph, "/");
+        assert_eq!(dir_size(&graph, e), 584);
+        assert_eq!(dir_size(&graph, a), 94853);
+        assert_eq!(dir_size(&graph, d), 24933642);
+        assert_eq!(dir_size(&graph, root), 48381165);
     }
 }
 
@@ -61,6 +75,23 @@ fn parse_input(path: &str) -> Graph<Type, i32> {
         }
     }
     graph
+}
+
+fn dir_size(graph: &Graph<Type, i32>, node: NodeIndex) -> usize {
+    let children = graph.neighbors_directed(node, Direction::Outgoing);
+    let mut total = 0;
+    for child in children {
+        let child_node = graph.node_weight(child).unwrap();
+        match child_node {
+            Type::Dir(_) => {
+                total += dir_size(graph, child);
+            }
+            Type::File((size, _)) => {
+                total += size;
+            }
+        }
+    }
+    total
 }
 
 fn main() {
