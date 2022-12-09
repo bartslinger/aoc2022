@@ -7,7 +7,13 @@ mod tests {
     #[test]
     fn test_example() {
         let input = parse_input("./src/09/test.txt");
-        assert_eq!(count_tail_locations(&input), 13);
+        assert_eq!(count_tail_locations(&input, 2), 13);
+    }
+
+    #[test]
+    fn test_larger_example() {
+        let input = parse_input("./src/09/test2.txt");
+        assert_eq!(count_tail_locations(&input, 10), 36);
     }
 }
 
@@ -52,20 +58,30 @@ fn follow(head: (i32, i32), tail: (i32, i32)) -> (i32, i32) {
         (2, 1) | (2, -1) => (1, 0),
         (-1, 2) | (1, 2) => (0, 1),
         (-1, -2) | (1, -2) => (0, -1),
+        // Add diagonal moves of the head for part 2
+        (-2, -2) => (-1, -1),
+        (-2, 2) => (-1, 1),
+        (2, 2) => (1, 1),
+        (2, -2) => (1, -1),
         _ => relative_position,
     };
     add(head, updated_relative_position)
 }
 
-fn count_tail_locations(steps: &Vec<(i32, i32)>) -> usize {
+fn count_tail_locations(steps: &Vec<(i32, i32)>, rope_length: usize) -> usize {
+    // Create a rope of rope_length with all knots at (0, 0)
+    let mut rope: Vec<(i32, i32)> = std::iter::repeat((0, 0)).take(rope_length).collect();
+
     let mut unique_positions = HashSet::<(i32, i32)>::new();
-    let mut head = (0, 0);
-    let mut tail = (0, 0);
     for step in steps {
-        head = add(head, *step);
-        tail = follow(head, tail);
+        rope[0] = add(rope[0], *step);
+        for n in 1..rope_length {
+            rope[n] = follow(rope[n - 1], rope[n]);
+        }
+        let tail = *rope.last().unwrap();
         unique_positions.insert(tail);
     }
+
     unique_positions.len()
 }
 
@@ -73,6 +89,9 @@ fn main() {
     println!("Hello, day 9!");
     let input = parse_input("./input/09/input.txt");
 
-    let unique_positions = count_tail_locations(&input);
+    let unique_positions = count_tail_locations(&input, 2);
     println!("Part 1: {}", unique_positions);
+
+    let unique_positions = count_tail_locations(&input, 10);
+    println!("Part 2: {}", unique_positions);
 }
