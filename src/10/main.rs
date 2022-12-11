@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -19,6 +21,20 @@ mod tests {
         let instructions = parse_input("./src/10/test.txt");
         let history = register_value_history(&instructions);
         assert_eq!(signal_strength_sum(&history), 13140);
+    }
+
+    #[test]
+    fn crt_rows() {
+        let instructions = parse_input("./src/10/test.txt");
+        let history = register_value_history(&instructions);
+        assert_eq!(
+            crt_row(&history, 0),
+            "##..##..##..##..##..##..##..##..##..##.."
+        );
+        assert_eq!(
+            crt_row(&history, 5),
+            "#######.......#######.......#######....."
+        );
     }
 }
 
@@ -50,6 +66,7 @@ fn parse_input(path: &str) -> Vec<Instruction> {
 fn register_value_history(instructions: &Vec<Instruction>) -> Vec<i32> {
     let mut history = Vec::new();
     let mut value = 1;
+    history.push(value);
     for instruction in instructions {
         match instruction {
             Instruction::Noop => history.push(value),
@@ -64,7 +81,7 @@ fn register_value_history(instructions: &Vec<Instruction>) -> Vec<i32> {
 }
 
 fn signal_strength(history: &[i32], cycle: usize) -> i32 {
-    let value = history.get(cycle - 2).unwrap();
+    let value = history.get(cycle - 1).unwrap();
     value * (cycle as i32)
 }
 
@@ -75,6 +92,20 @@ fn signal_strength_sum(history: &[i32]) -> i32 {
         .sum()
 }
 
+fn crt_row(history: &[i32], row: usize) -> String {
+    (0..40)
+        .map(|i| {
+            let diff = history[i + row * 40] - (i as i32);
+            diff.abs() <= 1
+        })
+        .map(|visible| if visible { '#' } else { '.' })
+        .collect()
+}
+
+fn crt_screen(history: &[i32]) -> String {
+    (0..6).map(|row| crt_row(history, row)).join("\n")
+}
+
 fn main() {
     println!("Hello, day 10!");
 
@@ -83,4 +114,6 @@ fn main() {
     let sum = signal_strength_sum(&history);
 
     println!("Part 1: {}", sum);
+    println!("Part 2:");
+    println!("{}", crt_screen(&history));
 }
