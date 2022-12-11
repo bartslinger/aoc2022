@@ -8,7 +8,7 @@ mod tests {
     #[test]
     fn test_first_round() {
         let mut monkeys = parse_input("./src/11/test.txt");
-        play_round(&mut monkeys);
+        play_round(&mut monkeys, true);
         assert_eq!(monkeys[0].borrow().items, vec![20, 23, 27, 26]);
         assert_eq!(
             monkeys[1].borrow().items,
@@ -21,7 +21,7 @@ mod tests {
     #[test]
     fn test_20_rounds() {
         let mut monkeys = parse_input("./src/11/test.txt");
-        play_rounds(&mut monkeys, 20);
+        play_rounds(&mut monkeys, 20, true);
         assert_eq!(monkeys[0].borrow().items, vec![10, 12, 14, 26, 34]);
         assert_eq!(monkeys[1].borrow().items, vec![245, 93, 53, 199, 115]);
         assert_eq!(monkeys[2].borrow().items, vec![]);
@@ -31,8 +31,15 @@ mod tests {
     #[test]
     fn calculate_monkey_business() {
         let mut monkeys = parse_input("./src/11/test.txt");
-        play_rounds(&mut monkeys, 20);
-        assert_eq!(monkey_business(&monkeys), 10605);
+        play_rounds(&mut monkeys, 20, true);
+        assert_eq!(get_monkey_business(&monkeys), 10605);
+    }
+
+    #[test]
+    fn test_part_two() {
+        let mut monkeys = parse_input("./src/11/test.txt");
+        play_rounds(&mut monkeys, 10000, false);
+        assert_eq!(get_monkey_business(&monkeys), 2713310158);
     }
 }
 
@@ -93,14 +100,21 @@ fn parse_input(path: &str) -> Vec<RefCell<Monkey>> {
     monkeys
 }
 
-fn play_round(monkeys: &mut [RefCell<Monkey>]) {
+fn play_round(monkeys: &mut [RefCell<Monkey>], div_by_three: bool) {
+    let common_division: i64 = monkeys
+        .iter()
+        .map(|m| m.borrow().test_divisible_by)
+        .product();
     for m in monkeys.iter() {
         let mut monkey = m.borrow_mut();
         let op = &monkey.operation;
         for item in monkey.items.iter() {
             let mut item = *item;
             item = op(item);
-            item /= 3;
+            item %= common_division;
+            if div_by_three {
+                item /= 3;
+            }
             let divisible = item % monkey.test_divisible_by == 0;
             let target_monkey_index = if divisible {
                 monkey.test_true_target_index
@@ -115,13 +129,13 @@ fn play_round(monkeys: &mut [RefCell<Monkey>]) {
     }
 }
 
-fn play_rounds(monkeys: &mut [RefCell<Monkey>], rounds: usize) {
+fn play_rounds(monkeys: &mut [RefCell<Monkey>], rounds: usize, div_by_three: bool) {
     for _ in 0..rounds {
-        play_round(monkeys);
+        play_round(monkeys, div_by_three);
     }
 }
 
-fn monkey_business(monkeys: &[RefCell<Monkey>]) -> usize {
+fn get_monkey_business(monkeys: &[RefCell<Monkey>]) -> usize {
     monkeys
         .iter()
         .map(|monkey| monkey.borrow().inspection_count)
@@ -135,7 +149,12 @@ fn main() {
     println!("Hello, day 11!");
 
     let mut monkeys = parse_input("./input/11/input.txt");
-    play_rounds(&mut monkeys, 20);
-    let monkey_business = monkey_business(&monkeys);
+    play_rounds(&mut monkeys, 20, true);
+    let monkey_business = get_monkey_business(&monkeys);
     println!("Part 1: {}", monkey_business);
+
+    let mut monkeys = parse_input("./input/11/input.txt");
+    play_rounds(&mut monkeys, 10000, false);
+    let monkey_business = get_monkey_business(&monkeys);
+    println!("Part 2: {}", monkey_business);
 }
