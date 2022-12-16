@@ -10,6 +10,14 @@ mod tests {
         let rock = parse_input("./src/14/test.txt");
         assert_eq!(count_sand_pile(&rock), 24);
     }
+
+    #[test]
+    fn test_count_with_floor() {
+        let mut rock = parse_input("./src/14/test.txt");
+        add_floor(&mut rock);
+        println!("{:?}", rock);
+        assert_eq!(count_sand_pile(&rock), 93);
+    }
 }
 
 fn parse_coordinate(input: &str) -> (i32, i32) {
@@ -47,6 +55,15 @@ fn lowest_rock(rock: &HashSet<(i32, i32)>) -> i32 {
     rock.iter().map(|(_x, y)| *y).max().unwrap()
 }
 
+fn add_floor(rock: &mut HashSet<(i32, i32)>) {
+    let floor_level = lowest_rock(rock) + 2;
+    draw_rock(
+        rock,
+        (500 - floor_level, floor_level),
+        (500 + floor_level, floor_level),
+    );
+}
+
 fn drop_sand_unit(rock: &HashSet<(i32, i32)>, sand: &mut HashSet<(i32, i32)>) -> bool {
     let bottom = lowest_rock(rock);
     let mut unit = (500, 0);
@@ -72,6 +89,9 @@ fn drop_sand_unit(rock: &HashSet<(i32, i32)>, sand: &mut HashSet<(i32, i32)>) ->
         break;
     }
     sand.insert(unit);
+    if unit == (500, 0) {
+        return false;
+    }
     true
 }
 
@@ -84,7 +104,11 @@ fn count_sand_pile(rock: &HashSet<(i32, i32)>) -> usize {
 fn main() {
     println!("Hello, day 14!");
 
-    let rock = parse_input("./input/14/input.txt");
+    let mut rock = parse_input("./input/14/input.txt");
     let count = count_sand_pile(&rock);
     println!("Part 1: {}", count);
+
+    add_floor(&mut rock);
+    let count = count_sand_pile(&rock);
+    println!("Part 2: {}", count);
 }
