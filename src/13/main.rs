@@ -20,16 +20,22 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_empty_list_first() {
+        let list = parse_item(&mut "[[],1]".chars().peekable());
+        assert_eq!(list, Item::List(vec![Item::List(vec![]), Item::Int(1)]));
+    }
+
+    #[test]
     fn test_correct_pairs() {
         let pairs = parse_input("./src/13/test.txt");
-        assert!(correct_order(&pairs[0]).unwrap_or(false));
-        assert!(correct_order(&pairs[1]).unwrap_or(false));
-        assert!(!correct_order(&pairs[2]).unwrap_or(false));
-        assert!(correct_order(&pairs[3]).unwrap_or(false));
-        assert!(!correct_order(&pairs[4]).unwrap_or(false));
-        assert!(correct_order(&pairs[5]).unwrap_or(false));
-        assert!(!correct_order(&pairs[6]).unwrap_or(false));
-        assert!(!correct_order(&pairs[7]).unwrap_or(false));
+        assert!(correct_order(&pairs[0]).unwrap());
+        assert!(correct_order(&pairs[1]).unwrap());
+        assert!(!correct_order(&pairs[2]).unwrap());
+        assert!(correct_order(&pairs[3]).unwrap());
+        assert!(!correct_order(&pairs[4]).unwrap());
+        assert!(correct_order(&pairs[5]).unwrap());
+        assert!(!correct_order(&pairs[6]).unwrap());
+        assert!(!correct_order(&pairs[7]).unwrap());
     }
 
     #[test]
@@ -42,14 +48,14 @@ mod tests {
             Item::List(vec![Item::Int(42), Item::Int(42)]),
             Item::Int(3),
         ]);
-        assert!(!correct_order(&(left, right)).unwrap_or(false));
+        assert!(!correct_order(&(left, right)).unwrap());
     }
 
     #[test]
     fn test_comparing_equal_inputs() {
         let left = Item::List(vec![Item::List(vec![])]);
         let right = Item::List(vec![Item::List(vec![])]);
-        assert!(!correct_order(&(left, right)).unwrap_or(false));
+        assert!(correct_order(&(left, right)).is_none());
     }
 
     #[test]
@@ -72,6 +78,7 @@ fn parse_item(line: &mut Peekable<std::str::Chars>) -> Item {
             let mut items = Vec::<Item>::new();
             loop {
                 if *line.peek().unwrap() == ']' {
+                    line.next();
                     break;
                 }
                 let item = parse_item(line);
@@ -147,7 +154,7 @@ fn count_correct_pairs(pairs: &[(Item, Item)]) -> usize {
     pairs
         .iter()
         .enumerate()
-        .filter(|(_, pair)| correct_order(pair).unwrap_or(false))
+        .filter(|(_, pair)| correct_order(pair).unwrap())
         .map(|(index, _)| index + 1)
         .sum()
 }
@@ -157,6 +164,5 @@ fn main() {
 
     let pairs = parse_input("./input/13/input.txt");
     let correct_pairs = count_correct_pairs(&pairs);
-    println!("Part 1: {}", correct_pairs); // 5509 is wrong (too high), 5017 is also too high
-                                           // Now considering equal pairs not equal, but then the answer 4716 is too low
+    println!("Part 1: {}", correct_pairs);
 }
