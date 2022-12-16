@@ -43,8 +43,16 @@ fn manhatten_distance(a: (i64, i64), b: (i64, i64)) -> i64 {
     dx.abs() + dy.abs()
 }
 
-fn coverage_in_row(input: &Vec<(Coordinate, Coordinate)>, row: i64) -> usize {
-    let mut coverage = HashSet::<i64>::new();
+fn overlaps(a: &(i64, i64), b: &(i64, i64)) -> bool {
+    a.1 >= b.0
+}
+
+fn merge(a: &(i64, i64), b: &(i64, i64)) -> (i64, i64) {
+    (a.0, b.1)
+}
+
+fn coverage_in_row(input: &Vec<(Coordinate, Coordinate)>, row: i64) -> i64 {
+    let mut coverage = Vec::<(i64, i64)>::new();
     for pair in input {
         let sensor = pair.0;
         let beacon = pair.1;
@@ -54,19 +62,21 @@ fn coverage_in_row(input: &Vec<(Coordinate, Coordinate)>, row: i64) -> usize {
             let remaining = range - dy.abs();
             let left = sensor.0 - remaining;
             let right = sensor.0 + remaining;
-            for i in left..=right {
-                coverage.insert(i);
-            }
+            coverage.push((left, right));
         }
     }
-    // remove beacons from coverage
-    for pair in input {
-        let beacon = pair.1;
-        if beacon.1 == row {
-            coverage.remove(&beacon.0);
+    // Sort coverage ranges
+    coverage.sort_by(|a, b| a.0.cmp(&b.0));
+    let mut merged_coverage = vec![coverage[0]];
+    for range in coverage {
+        if overlaps(&range, merged_coverage.last().unwrap()) {
+            // overwrite
+            let previous = merged_coverage.pop().unwrap();
+            let new = merge(&previous, &range);
+            merged_coverage.push(new);
         }
     }
-    coverage.len()
+    merged_coverage.iter().map(|(a, b)| b - a).sum()
 }
 
 fn main() {
