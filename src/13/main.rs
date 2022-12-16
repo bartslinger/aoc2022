@@ -20,14 +20,26 @@ mod tests {
     }
 
     #[test]
-    fn test_count_correct_pairs() {
-        let input = parse_input("./src/13/test.txt");
+    fn test_correct_pairs() {
+        let pairs = parse_input("./src/13/test.txt");
+        assert!(correct_order(&pairs[0]).unwrap());
+        assert!(correct_order(&pairs[1]).unwrap());
+        assert!(!correct_order(&pairs[2]).unwrap());
+        assert!(correct_order(&pairs[3]).unwrap());
+        assert!(!correct_order(&pairs[4]).unwrap());
+        assert!(correct_order(&pairs[5]).unwrap());
+        assert!(!correct_order(&pairs[6]).unwrap());
+        assert!(!correct_order(&pairs[7]).unwrap());
+    }
 
-        assert!(false);
+    #[test]
+    fn test_count_correct_pairs() {
+        let pairs = parse_input("./src/13/test.txt");
+        assert_eq!(count_correct_pairs(&pairs), 13);
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 enum Item {
     Int(i32),
     List(Vec<Item>),
@@ -74,6 +86,53 @@ fn parse_input(path: &str) -> Vec<(Item, Item)> {
     pairs
 }
 
+fn correct_order(pair: &(Item, Item)) -> Option<bool> {
+    let pair = pair.clone();
+    match pair {
+        (Item::Int(a), Item::Int(b)) => {
+            if a == b {
+                None
+            } else {
+                Some(a <= b)
+            }
+        }
+        (Item::Int(a), Item::List(b)) => {
+            correct_order(&(Item::List(vec![Item::Int(a)]), Item::List(b)))
+        }
+        (Item::List(a), Item::Int(b)) => {
+            correct_order(&(Item::List(a), Item::List(vec![Item::Int(b)])))
+        }
+        (Item::List(a), Item::List(b)) => {
+            for i in 0..a.len() {
+                let left = a.get(i);
+                let right = b.get(i);
+                if right.is_none() {
+                    return Some(false);
+                };
+                if let Some(correct) =
+                    correct_order(&(left.unwrap().clone(), right.unwrap().clone()))
+                {
+                    return Some(correct);
+                }
+            }
+            Some(true)
+        }
+    }
+}
+
+fn count_correct_pairs(pairs: &[(Item, Item)]) -> usize {
+    pairs
+        .iter()
+        .enumerate()
+        .filter(|(_, pair)| correct_order(pair).unwrap())
+        .map(|(index, _)| index + 1)
+        .sum()
+}
+
 fn main() {
     println!("Hello, day 13!");
+
+    let pairs = parse_input("./input/13/input.txt");
+    let correct_pairs = count_correct_pairs(&pairs);
+    println!("Part 1: {}", correct_pairs); // 5509 is wrong (too high)
 }
