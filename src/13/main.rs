@@ -1,6 +1,7 @@
 extern crate core;
 
 use itertools::Itertools;
+use std::cmp::Ordering;
 use std::iter::Peekable;
 
 #[cfg(test)]
@@ -63,12 +64,35 @@ mod tests {
         let pairs = parse_input("./src/13/test.txt");
         assert_eq!(count_correct_pairs(&pairs), 13);
     }
+
+    #[test]
+    fn sort_example() {
+        let pairs = parse_input("./src/13/test.txt");
+        let decoder_key = find_decoder_key(&pairs);
+        assert_eq!(decoder_key, 140);
+    }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 enum Item {
     Int(i32),
     List(Vec<Item>),
+}
+
+impl PartialOrd for Item {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Item {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match correct_order(&(self.clone(), other.clone())) {
+            Some(true) => Ordering::Less,
+            Some(false) => Ordering::Greater,
+            None => Ordering::Equal,
+        }
+    }
 }
 
 fn parse_item(line: &mut Peekable<std::str::Chars>) -> Item {
@@ -111,6 +135,15 @@ fn parse_input(path: &str) -> Vec<(Item, Item)> {
         pairs.push(pair);
     }
     pairs
+}
+
+fn flatten_pairs(pairs: &Vec<(Item, Item)>) -> Vec<Item> {
+    let mut items = vec![];
+    for pair in pairs {
+        items.push(pair.0.clone());
+        items.push(pair.1.clone());
+    }
+    items
 }
 
 fn correct_order(pair: &(Item, Item)) -> Option<bool> {
@@ -159,10 +192,34 @@ fn count_correct_pairs(pairs: &[(Item, Item)]) -> usize {
         .sum()
 }
 
+fn find_decoder_key(pairs: &Vec<(Item, Item)>) -> usize {
+    let mut items = flatten_pairs(pairs);
+    let first = parse_item(&mut "[[2]]".chars().peekable());
+    let second = parse_item(&mut "[[6]]".chars().peekable());
+    items.push(first.clone());
+    items.push(second.clone());
+    items.sort();
+
+    let mut first_index = 0;
+    let mut second_index = 0;
+    for (index, item) in items.iter().enumerate() {
+        if *item == first {
+            first_index = index + 1;
+        }
+        if *item == second {
+            second_index = index + 1;
+        }
+    }
+    first_index * second_index
+}
+
 fn main() {
     println!("Hello, day 13!");
 
     let pairs = parse_input("./input/13/input.txt");
     let correct_pairs = count_correct_pairs(&pairs);
     println!("Part 1: {}", correct_pairs);
+
+    let decoder_key = find_decoder_key(&pairs);
+    println!("Part 2: {}", decoder_key);
 }
