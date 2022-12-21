@@ -25,8 +25,31 @@ mod tests {
                 total_pressure: 0,
             },
             non_zero_valves,
+            30,
         );
         assert_eq!(most_pressure, 1651);
+    }
+
+    #[test]
+    fn test_with_elephant_helping() {
+        let valves = parse_input("./src/16/test.txt");
+        let distances = calculate_distances(&valves);
+
+        let start_valve = valves.iter().find(|valve| valve.name == "AA").unwrap();
+        let non_zero_valves: Vec<&Valve> =
+            valves.iter().filter(|valve| valve.flow_rate > 0).collect();
+        let most_pressure = find_most_pressure_with_elephant(
+            &distances,
+            start_valve,
+            State {
+                previous_valve: start_valve,
+                time: 0,
+                flow_rate: 0,
+                total_pressure: 0,
+            },
+            non_zero_valves,
+        );
+        assert_eq!(most_pressure, 1707);
     }
 }
 
@@ -113,8 +136,9 @@ fn find_most_pressure(
     distance_map: &HashMap<(&Valve, &Valve), u32>,
     state: State,
     remaining_valves: Vec<&Valve>,
+    time_limit: u32,
 ) -> u32 {
-    let remaining_time = 30 - state.time;
+    let remaining_time = time_limit - state.time;
     let mut max_pressure = state.total_pressure + remaining_time * state.flow_rate;
     for i in 0..remaining_valves.len() {
         let mut new_remaining_valves = remaining_valves.clone();
@@ -125,7 +149,7 @@ fn find_most_pressure(
             .unwrap()
             + 1;
         let new_time = state.time + minutes;
-        if new_time >= 30 {
+        if new_time >= time_limit {
             // This valve adds nothing
             continue;
         }
@@ -134,6 +158,57 @@ fn find_most_pressure(
         // Open more valves
         max_pressure = max_pressure.max(find_most_pressure(
             distance_map,
+            State {
+                previous_valve: new_valve,
+                time: new_time,
+                flow_rate: new_flow_rate,
+                total_pressure: new_total_pressure,
+            },
+            new_remaining_valves,
+            time_limit,
+        ));
+    }
+
+    max_pressure
+}
+
+fn find_most_pressure_with_elephant(
+    distance_map: &HashMap<(&Valve, &Valve), u32>,
+    start_valve: &Valve,
+    state: State,
+    remaining_valves: Vec<&Valve>,
+) -> u32 {
+    let remaining_time = 26 - state.time;
+    let max_pressure_without_changes = state.total_pressure + remaining_time * state.flow_rate;
+    let elephant_state = State {
+        previous_valve: start_valve,
+        time: 0,
+        flow_rate: 0,
+        total_pressure: 0,
+    };
+    let max_pressure_by_elephant =
+        find_most_pressure(distance_map, elephant_state, remaining_valves.clone(), 26);
+    let mut max_pressure = max_pressure_without_changes + max_pressure_by_elephant;
+
+    for i in 0..remaining_valves.len() {
+        let mut new_remaining_valves = remaining_valves.clone();
+        let new_valve = new_remaining_valves.remove(i);
+
+        let minutes = *distance_map
+            .get(&(state.previous_valve, new_valve))
+            .unwrap()
+            + 1;
+        let new_time = state.time + minutes;
+        if new_time >= 26 {
+            // This valve adds nothing
+            continue;
+        }
+        let new_total_pressure = state.total_pressure + state.flow_rate * minutes;
+        let new_flow_rate = state.flow_rate + new_valve.flow_rate;
+        // Open more valves
+        max_pressure = max_pressure.max(find_most_pressure_with_elephant(
+            distance_map,
+            start_valve,
             State {
                 previous_valve: new_valve,
                 time: new_time,
@@ -163,7 +238,21 @@ fn main() {
             flow_rate: 0,
             total_pressure: 0,
         },
-        non_zero_valves,
+        non_zero_valves.clone(),
+        30,
     );
     println!("Part 1: {}", most_pressure);
+
+    let most_pressure = find_most_pressure_with_elephant(
+        &distances,
+        start_valve,
+        State {
+            previous_valve: start_valve,
+            time: 0,
+            flow_rate: 0,
+            total_pressure: 0,
+        },
+        non_zero_valves,
+    );
+    println!("Part 2: {}", most_pressure);
 }
