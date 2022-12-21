@@ -19,11 +19,11 @@ mod tests {
         let most_pressure = find_most_pressure(
             &distances,
             State {
+                previous_valve: start_valve,
                 time: 0,
                 flow_rate: 0,
                 total_pressure: 0,
             },
-            start_valve,
             non_zero_valves,
         );
         assert_eq!(most_pressure, 1651);
@@ -68,13 +68,6 @@ fn node_index(graph: &UnGraph<&Valve, i32>, name: &String) -> NodeIndex {
         .unwrap()
 }
 
-fn relevant_valves(valves: &[Valve]) -> Vec<&Valve> {
-    valves
-        .iter()
-        .filter(|valve| valve.name == "AA" || valve.flow_rate > 0)
-        .collect()
-}
-
 fn calculate_distances(valves: &Vec<Valve>) -> HashMap<(&Valve, &Valve), u32> {
     let mut graph = UnGraph::<&Valve, i32>::new_undirected();
     for valve in valves {
@@ -92,7 +85,11 @@ fn calculate_distances(valves: &Vec<Valve>) -> HashMap<(&Valve, &Valve), u32> {
     }
 
     let mut distance_map = HashMap::<(&Valve, &Valve), u32>::new();
-    for valve in relevant_valves(valves) {
+    let relevant_valves: Vec<&Valve> = valves
+        .iter()
+        .filter(|valve| valve.name == "AA" || valve.flow_rate > 0)
+        .collect();
+    for valve in relevant_valves {
         let start_node = node_index(&graph, &valve.name);
         let distances = dijkstra(&graph, start_node, None, |_| 1);
         for (destination_index, distance) in distances {
@@ -105,7 +102,8 @@ fn calculate_distances(valves: &Vec<Valve>) -> HashMap<(&Valve, &Valve), u32> {
     distance_map
 }
 
-struct State {
+struct State<'a> {
+    previous_valve: &'a Valve,
     time: u32,
     flow_rate: u32,
     total_pressure: u32,
@@ -114,7 +112,6 @@ struct State {
 fn find_most_pressure(
     distance_map: &HashMap<(&Valve, &Valve), u32>,
     state: State,
-    previous_valve: &Valve,
     remaining_valves: Vec<&Valve>,
 ) -> u32 {
     let remaining_time = 30 - state.time;
@@ -123,28 +120,28 @@ fn find_most_pressure(
         let mut new_remaining_valves = remaining_valves.clone();
         let new_valve = new_remaining_valves.remove(i);
 
-        let minutes = *distance_map.get(&(previous_valve, new_valve)).unwrap() + 1;
+        let minutes = *distance_map
+            .get(&(state.previous_valve, new_valve))
+            .unwrap()
+            + 1;
         let new_time = state.time + minutes;
-        if new_time > 30 {
+        if new_time >= 30 {
             // This valve adds nothing
             continue;
         }
         let new_total_pressure = state.total_pressure + state.flow_rate * minutes;
         let new_flow_rate = state.flow_rate + new_valve.flow_rate;
         // Open more valves
-        let pressure = find_most_pressure(
+        max_pressure = max_pressure.max(find_most_pressure(
             distance_map,
             State {
+                previous_valve: new_valve,
                 time: new_time,
                 flow_rate: new_flow_rate,
                 total_pressure: new_total_pressure,
             },
-            new_valve,
             new_remaining_valves,
-        );
-        if pressure > max_pressure {
-            max_pressure = pressure;
-        }
+        ));
     }
 
     max_pressure
@@ -161,11 +158,11 @@ fn main() {
     let most_pressure = find_most_pressure(
         &distances,
         State {
+            previous_valve: start_valve,
             time: 0,
             flow_rate: 0,
             total_pressure: 0,
         },
-        start_valve,
         non_zero_valves,
     );
     println!("Part 1: {}", most_pressure);
