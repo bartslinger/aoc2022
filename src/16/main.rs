@@ -34,12 +34,7 @@ mod tests {
         let start_valve = valves.iter().find(|valve| valve.name == "AA").unwrap();
         let non_zero_valves: Vec<&Valve> =
             valves.iter().filter(|valve| valve.flow_rate > 0).collect();
-        let (most_pressure, sequence) =
-            find_most_pressure(&distances, 0, start_valve, vec![], non_zero_valves);
-        // println!(
-        //     "Sequence: {:?}",
-        //     sequence.iter().map(|v| &v.name).collect::<Vec<&String>>()
-        // );
+        let most_pressure = find_most_pressure(&distances, 0, start_valve, &[], non_zero_valves);
         assert_eq!(most_pressure, 1651);
     }
 }
@@ -113,13 +108,8 @@ fn calculate_distances(valves: &Vec<Valve>) -> HashMap<(&Valve, &Valve), u32> {
             let destination_node = graph.node_weight(destination_index).unwrap();
             if (destination_node.name == "AA" || destination_node.flow_rate > 0) && distance > 0 {
                 distance_map.insert((valve, destination_node), distance);
-                println!(
-                    "From {} to {} = {}",
-                    valve.name, destination_node.name, distance
-                );
             }
         }
-        println!();
     }
     distance_map
 }
@@ -152,26 +142,17 @@ fn calculate_pressure_release(
     total_pressure
 }
 
-// fn feasible_permutations<'a>(
-//     distance_map: &HashMap<(&Valve, &Valve), u32>,
-//     start: &'a Valve,
-//     valves: Vec<&'a Valve>,
-// ) -> Vec<&'a Valve> {
-//     valves
-// }
-
-fn find_most_pressure<'a>(
+fn find_most_pressure(
     distance_map: &HashMap<(&Valve, &Valve), u32>,
     time: u32,
     start_valve: &Valve,
-    opened_valves: Vec<&'a Valve>,
-    remaining_valves: Vec<&'a Valve>,
-) -> (u32, Vec<&'a Valve>) {
-    let mut max_pressure = 0;
-    let mut max_sequence: Vec<&Valve> = vec![];
+    opened_valves: &[&Valve],
+    remaining_valves: Vec<&Valve>,
+) -> u32 {
+    let mut max_pressure = calculate_pressure_release(distance_map, start_valve, opened_valves);
     for i in 0..remaining_valves.len() {
         let mut new_remaining_valves = remaining_valves.clone();
-        let mut new_opened_valves = opened_valves.clone();
+        let mut new_opened_valves = Vec::from(opened_valves);
         new_opened_valves.push(new_remaining_valves.remove(i));
 
         let distance = if opened_valves.is_empty() {
@@ -189,43 +170,32 @@ fn find_most_pressure<'a>(
                 .unwrap()
         };
         let new_time = time + distance + 1;
-
-        // println!(
-        //     "New opened valves: {:?}  Remaining: {:?}  Time: {}",
-        //     new_opened_valves
-        //         .iter()
-        //         .map(|v| &v.name)
-        //         .collect::<Vec<&String>>(),
-        //     new_remaining_valves
-        //         .iter()
-        //         .map(|v| &v.name)
-        //         .collect::<Vec<&String>>(),
-        //     new_time
-        // );
-        if new_remaining_valves.is_empty() || new_time >= 30 {
+        if new_time >= 30 {
+            // Don't consider this option, has no added value
+            continue;
+        }
+        if new_remaining_valves.is_empty() {
             let pressure =
                 calculate_pressure_release(distance_map, start_valve, new_opened_valves.as_slice());
             if pressure > max_pressure {
                 max_pressure = pressure;
-                max_sequence = new_opened_valves.clone();
             }
             continue;
         }
         // Open more valves
-        let (pressure, sequence) = find_most_pressure(
+        let pressure = find_most_pressure(
             distance_map,
             new_time,
             start_valve,
-            new_opened_valves,
+            new_opened_valves.as_slice(),
             new_remaining_valves,
         );
         if pressure > max_pressure {
             max_pressure = pressure;
-            max_sequence = sequence;
         }
     }
 
-    (max_pressure, max_sequence)
+    max_pressure
 }
 
 fn main() {
@@ -236,7 +206,6 @@ fn main() {
 
     let start_valve = valves.iter().find(|valve| valve.name == "AA").unwrap();
     let non_zero_valves: Vec<&Valve> = valves.iter().filter(|valve| valve.flow_rate > 0).collect();
-    let (most_pressure, sequence) =
-        find_most_pressure(&distances, 0, start_valve, vec![], non_zero_valves);
+    let most_pressure = find_most_pressure(&distances, 0, start_valve, &[], non_zero_valves);
     println!("Part 1: {}", most_pressure);
 }
