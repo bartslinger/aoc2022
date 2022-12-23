@@ -10,6 +10,13 @@ mod tests {
 
         assert_eq!(drop_rocks(input, 2022), 3068);
     }
+
+    #[test]
+    fn example_part_two() {
+        let input = ">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>";
+
+        assert_eq!(drop_rocks(input, 1000000000000), 1514285714288);
+    }
 }
 
 fn drop_rocks(input: &str, amount: usize) -> u64 {
@@ -27,8 +34,68 @@ fn drop_rocks(input: &str, amount: usize) -> u64 {
     }
 
     let mut commands = input.chars().cycle();
+    // count blocks per input cycle
+    let commands_len = input.len();
+    let mut commands_executed = 0;
+
+    let mut command_index_memory: Vec<usize> = vec![];
+
     let mut height = 0;
+    let mut prev_height = 0;
+    let mut diffs = vec![];
     for i in 0..amount {
+        // discover a pattern
+        if i % 5 == 0 {
+            let command_index = commands_executed % commands_len;
+            command_index_memory.push(command_index);
+            // find another occurance of last value
+            let prev_occurance = command_index_memory
+                .iter()
+                .enumerate()
+                .filter(|(_, item)| **item == command_index)
+                .rev()
+                .nth(1);
+            if let Some((x, _)) = prev_occurance {
+                let slice_length = command_index_memory.len() - x - 1;
+                if command_index_memory.len() >= 2 * slice_length {
+                    let mut pattern_detected = true;
+                    for n in 0..slice_length {
+                        let right = *command_index_memory
+                            .get(command_index_memory.len() - 1 - n)
+                            .unwrap();
+                        let left = *command_index_memory
+                            .get(command_index_memory.len() - 1 - n - slice_length)
+                            .unwrap();
+                        if left != right {
+                            pattern_detected = false
+                        }
+                    }
+                    if pattern_detected {
+                        let pattern_diffs =
+                            diffs.as_slice()[diffs.len() - slice_length * 5..].to_vec();
+
+                        let pattern_height: u64 = pattern_diffs.iter().sum();
+
+                        // println!("Pattern detected after dropping {} blocks", i);
+                        // println!("The pattern contains {} blocks", slice_length * 5);
+                        // println!("Every pattern increases the height by: {}", pattern_height);
+                        // println!("Blocks remaining to be dropped: {}", amount - i);
+
+                        let remaining_patterns = (amount - i) / (slice_length * 5);
+                        let remaining_blocks = (amount - i) % (slice_length * 5);
+                        height += remaining_patterns as u64 * pattern_height;
+                        // println!("Height after dropping remaining patterns: {}", height);
+                        // println!("Remaining blocks to be dropped: {}", remaining_blocks);
+
+                        let remaining_height: u64 =
+                            pattern_diffs.as_slice()[0..remaining_blocks].iter().sum();
+                        height += remaining_height;
+                        break;
+                    }
+                }
+            }
+        }
+
         // spawn
         let rock_type = i % 5;
         let mut rock = rocks.get(rock_type).unwrap().clone();
@@ -40,6 +107,8 @@ fn drop_rocks(input: &str, amount: usize) -> u64 {
         });
         loop {
             // left/right
+            commands_executed += 1;
+
             match commands.next().unwrap() {
                 '>' => {
                     let mut moved_rock = rock.clone();
@@ -82,6 +151,9 @@ fn drop_rocks(input: &str, amount: usize) -> u64 {
             occupied.insert(*p);
             height = height.max(p.1);
         });
+        let diff = height - prev_height;
+        diffs.push(diff);
+        prev_height = height;
     }
     height
 }
@@ -92,4 +164,7 @@ fn main() {
     let input = std::fs::read_to_string("./input/17/input.txt").unwrap();
     let height = drop_rocks(input.trim(), 2022);
     println!("Part 1: {}", height);
+
+    let height = drop_rocks(input.trim(), 1000000000000);
+    println!("Part 2: {}", height);
 }
