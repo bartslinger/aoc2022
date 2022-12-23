@@ -6,8 +6,8 @@ mod tests {
     fn test_example() {
         let blueprints = parse_input("./src/19/test.txt");
 
-        assert_eq!(maximize_geodes(&blueprints[0]), 9);
-        assert_eq!(maximize_geodes(&blueprints[1]), 12);
+        assert_eq!(maximize_geodes(&blueprints[0], 24), 9);
+        assert_eq!(maximize_geodes(&blueprints[1], 24), 12);
         //
         assert_eq!(quality_levels(&blueprints), 33);
     }
@@ -120,8 +120,12 @@ impl State {
         self
     }
 
-    fn get_options(&self, blueprint: &Blueprint, mut options: Vec<State>) -> Vec<State> {
-        let time_limit = 24;
+    fn get_options(
+        &self,
+        mut options: Vec<State>,
+        blueprint: &Blueprint,
+        time_limit: u32,
+    ) -> Vec<State> {
         if self.time >= time_limit {
             return options;
         }
@@ -142,7 +146,7 @@ impl State {
                 if option.can_build_ore_robot(blueprint) {
                     option = option.build_ore_robot(blueprint);
                     options.push(option);
-                    options = option.get_options(blueprint, options);
+                    options = option.get_options(options, blueprint, time_limit);
                     break;
                 } else {
                     option.step();
@@ -157,7 +161,7 @@ impl State {
                 if option.can_build_clay_robot(blueprint) {
                     option = option.build_clay_robot(blueprint);
                     options.push(option);
-                    options = option.get_options(blueprint, options);
+                    options = option.get_options(options, blueprint, time_limit);
                     break;
                 } else {
                     option.step();
@@ -172,7 +176,7 @@ impl State {
                 if option.can_build_obsidian_robot(blueprint) {
                     option = option.build_obsidian_robot(blueprint);
                     options.push(option);
-                    options = option.get_options(blueprint, options);
+                    options = option.get_options(options, blueprint, time_limit);
                     break;
                 } else {
                     option.step();
@@ -187,7 +191,7 @@ impl State {
                 if option.can_build_geode_robot(blueprint) {
                     option = option.build_geode_robot(blueprint);
                     options.push(option);
-                    options = option.get_options(blueprint, options);
+                    options = option.get_options(options, blueprint, time_limit);
                     break;
                 } else {
                     option.step();
@@ -235,7 +239,7 @@ impl State {
     }
 }
 
-fn maximize_geodes(blueprint: &Blueprint) -> u32 {
+fn maximize_geodes(blueprint: &Blueprint, time_limit: u32) -> u32 {
     let begin_state = State {
         time: 0,
         ore_robots: 1,
@@ -248,7 +252,7 @@ fn maximize_geodes(blueprint: &Blueprint) -> u32 {
         geodes: 0,
     };
 
-    let options: Vec<State> = begin_state.get_options(blueprint, vec![]);
+    let options: Vec<State> = begin_state.get_options(vec![], blueprint, time_limit);
 
     options.iter().map(|s| s.geodes).max().unwrap()
 }
@@ -256,11 +260,20 @@ fn maximize_geodes(blueprint: &Blueprint) -> u32 {
 fn quality_levels(blueprints: &[Blueprint]) -> u32 {
     let mut quality_level = 0;
     for blueprint in blueprints.iter() {
-        let geodes = maximize_geodes(blueprint);
-        println!("Blueprint {}: {}", blueprint.id, geodes);
+        let geodes = maximize_geodes(blueprint, 24);
+        // println!("Blueprint {}: {}", blueprint.id, geodes);
         quality_level += blueprint.id * geodes;
     }
     quality_level
+}
+
+fn part_two(blueprints: &[Blueprint]) -> u32 {
+    let mut answer: u32 = 1;
+    for blueprint in blueprints.iter().take(3) {
+        let geodes = maximize_geodes(blueprint, 32);
+        answer *= geodes;
+    }
+    answer
 }
 
 fn main() {
@@ -270,4 +283,7 @@ fn main() {
     let part_one = quality_levels(&blueprints);
 
     println!("Part 1: {}", part_one);
+
+    let answer = part_two(&blueprints);
+    println!("Part 2: {}", answer);
 }
