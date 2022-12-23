@@ -120,13 +120,11 @@ impl State {
         self
     }
 
-    fn get_options(&self, blueprint: &Blueprint) -> Vec<State> {
-        let mut options = vec![];
-
-        // do nothing
-        let mut step_only = *self;
-        step_only.step();
-        options.push(step_only);
+    fn get_options(&self, blueprint: &Blueprint, mut options: Vec<State>) -> Vec<State> {
+        let time_limit = 24;
+        if self.time >= time_limit {
+            return options;
+        }
 
         let max_useful_ore_robots = blueprint.ore_robot_cost.max(
             blueprint.clay_robot_cost.max(
@@ -137,35 +135,82 @@ impl State {
             ),
         );
 
-        if self.time < 22
-            && self.ore_robots < max_useful_ore_robots
-            && self.can_build_ore_robot(blueprint)
+        // build ore robot next
+        if self.ore_robots < max_useful_ore_robots {
+            let mut option = *self;
+            while option.time < time_limit {
+                if option.can_build_ore_robot(blueprint) {
+                    option = option.build_ore_robot(blueprint);
+                    options.push(option);
+                    options = option.get_options(blueprint, options);
+                    break;
+                } else {
+                    option.step();
+                }
+            }
+        }
+
+        // build clay robot next
         {
-            options.push((*self).build_ore_robot(blueprint));
+            let mut option = *self;
+            while option.time < time_limit {
+                if option.can_build_clay_robot(blueprint) {
+                    option = option.build_clay_robot(blueprint);
+                    options.push(option);
+                    options = option.get_options(blueprint, options);
+                    break;
+                } else {
+                    option.step();
+                }
+            }
         }
 
-        if self.time < 21 && self.can_build_clay_robot(blueprint) {
-            options.push((*self).build_clay_robot(blueprint));
+        // build obsidian robot next
+        if self.clay_robots > 0 {
+            let mut option = *self;
+            while option.time < time_limit {
+                if option.can_build_obsidian_robot(blueprint) {
+                    option = option.build_obsidian_robot(blueprint);
+                    options.push(option);
+                    options = option.get_options(blueprint, options);
+                    break;
+                } else {
+                    option.step();
+                }
+            }
         }
 
-        if self.time < 22 && self.can_build_obsidian_robot(blueprint) {
-            options.push((*self).build_obsidian_robot(blueprint));
+        // build geode robot next
+        if self.obsidian_robots > 0 {
+            let mut option = *self;
+            while option.time < time_limit {
+                if option.can_build_geode_robot(blueprint) {
+                    option = option.build_geode_robot(blueprint);
+                    options.push(option);
+                    options = option.get_options(blueprint, options);
+                    break;
+                } else {
+                    option.step();
+                }
+            }
         }
 
-        if self.time < 23 && self.can_build_geode_robot(blueprint) {
-            options.push((*self).build_geode_robot(blueprint));
+        // build nothing, keep stepping until the end
+        if self.geode_robots > 0 {
+            let mut option = *self;
+            while option.time < time_limit {
+                option.step();
+            }
+            options.push(option);
         }
 
         options
     }
 
     fn is_definitely_worse_than(&self, rhs: &State) -> bool {
-        // if self.time >= rhs.time
-        //     && self.geode_robots < rhs.geode_robots
-        //     && self.geodes <= rhs.geodes
-        // {
-        //     return true;
-        // }
+        if self.time == 24 && self.geodes <= rhs.geodes {
+            return true;
+        }
         self.time >= rhs.time
             && self.ore_robots <= rhs.ore_robots
             && self.clay_robots <= rhs.clay_robots
@@ -203,29 +248,9 @@ fn maximize_geodes(blueprint: &Blueprint) -> u32 {
         geodes: 0,
     };
 
-    let mut states: Vec<State> = begin_state.get_options(blueprint);
-    for m in 1..24 {
-        let mut new_states: Vec<State> = vec![];
-        for state in &states {
-            let options = state.get_options(blueprint);
-            for option in options {
-                if !option.is_worse_than_any_of(&states) {
-                    new_states.push(option);
-                }
-            }
-        }
-        // also filter all the new states
-        let mut new_filtered_states = vec![];
-        for new_state in &new_states {
-            if !new_state.is_worse_than_any_of(&new_states) {
-                new_filtered_states.push(*new_state);
-            }
-        }
-        states = new_filtered_states;
-        println!("Minute: {} => States: {}", m + 1, states.len());
-    }
+    let options: Vec<State> = begin_state.get_options(blueprint, vec![]);
 
-    states.iter().map(|s| s.geodes).max().unwrap()
+    options.iter().map(|s| s.geodes).max().unwrap()
 }
 
 fn quality_levels(blueprints: &[Blueprint]) -> u32 {
