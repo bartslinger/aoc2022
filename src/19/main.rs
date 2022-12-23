@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -10,7 +8,7 @@ mod tests {
 
         assert_eq!(maximize_geodes(&blueprints[0]), 9);
         assert_eq!(maximize_geodes(&blueprints[1]), 12);
-
+        //
         assert_eq!(quality_levels(&blueprints), 33);
     }
 }
@@ -125,33 +123,49 @@ impl State {
     fn get_options(&self, blueprint: &Blueprint) -> Vec<State> {
         let mut options = vec![];
 
-        if self.can_build_geode_robot(&blueprint) {
-            // Always build a geode robot if possible
-            options.push((*self).build_geode_robot(&blueprint));
-            return options;
-        }
-
         // do nothing
         let mut step_only = *self;
         step_only.step();
         options.push(step_only);
 
-        if self.can_build_ore_robot(&blueprint) {
-            options.push((*self).build_ore_robot(&blueprint));
+        let max_useful_ore_robots = blueprint.ore_robot_cost.max(
+            blueprint.clay_robot_cost.max(
+                blueprint
+                    .obsidian_robot_cost
+                    .0
+                    .max(blueprint.geode_robot_cost.0),
+            ),
+        );
+
+        if self.time < 22
+            && self.ore_robots < max_useful_ore_robots
+            && self.can_build_ore_robot(blueprint)
+        {
+            options.push((*self).build_ore_robot(blueprint));
         }
 
-        if self.can_build_clay_robot(&blueprint) {
-            options.push((*self).build_clay_robot(&blueprint));
+        if self.time < 21 && self.can_build_clay_robot(blueprint) {
+            options.push((*self).build_clay_robot(blueprint));
         }
 
-        if self.can_build_obsidian_robot(&blueprint) {
-            options.push((*self).build_obsidian_robot(&blueprint));
+        if self.time < 22 && self.can_build_obsidian_robot(blueprint) {
+            options.push((*self).build_obsidian_robot(blueprint));
+        }
+
+        if self.time < 23 && self.can_build_geode_robot(blueprint) {
+            options.push((*self).build_geode_robot(blueprint));
         }
 
         options
     }
 
     fn is_definitely_worse_than(&self, rhs: &State) -> bool {
+        // if self.time >= rhs.time
+        //     && self.geode_robots < rhs.geode_robots
+        //     && self.geodes <= rhs.geodes
+        // {
+        //     return true;
+        // }
         self.time >= rhs.time
             && self.ore_robots <= rhs.ore_robots
             && self.clay_robots <= rhs.clay_robots
@@ -163,7 +177,7 @@ impl State {
             && self.geodes <= rhs.geodes
     }
 
-    fn is_worse_than_any_of(&self, rhs: &Vec<State>) -> bool {
+    fn is_worse_than_any_of(&self, rhs: &[State]) -> bool {
         for rhs_item in rhs.iter() {
             if self == rhs_item {
                 continue;
@@ -190,7 +204,7 @@ fn maximize_geodes(blueprint: &Blueprint) -> u32 {
     };
 
     let mut states: Vec<State> = begin_state.get_options(blueprint);
-    for m in 1..21 {
+    for m in 1..24 {
         let mut new_states: Vec<State> = vec![];
         for state in &states {
             let options = state.get_options(blueprint);
@@ -200,29 +214,35 @@ fn maximize_geodes(blueprint: &Blueprint) -> u32 {
                 }
             }
         }
+        // also filter all the new states
         let mut new_filtered_states = vec![];
         for new_state in &new_states {
             if !new_state.is_worse_than_any_of(&new_states) {
                 new_filtered_states.push(*new_state);
             }
         }
-        // also filter all the new states
         states = new_filtered_states;
-        println!("States: {} {}", m, states.len());
+        println!("Minute: {} => States: {}", m + 1, states.len());
     }
 
-    println!("Options: {}", states.len());
-    println!(
-        "max geodes: {}",
-        states.iter().map(|s| s.geodes).max().unwrap()
-    );
     states.iter().map(|s| s.geodes).max().unwrap()
 }
 
-fn quality_levels(blueprints: &Vec<Blueprint>) -> u32 {
-    0
+fn quality_levels(blueprints: &[Blueprint]) -> u32 {
+    let mut quality_level = 0;
+    for blueprint in blueprints.iter() {
+        let geodes = maximize_geodes(blueprint);
+        println!("Blueprint {}: {}", blueprint.id, geodes);
+        quality_level += blueprint.id * geodes;
+    }
+    quality_level
 }
 
 fn main() {
     println!("Hello, day 19!");
+
+    let blueprints = parse_input("./input/19/input.txt");
+    let part_one = quality_levels(&blueprints);
+
+    println!("Part 1: {}", part_one);
 }
