@@ -261,7 +261,7 @@ fn quality_levels(blueprints: &[Blueprint]) -> u32 {
     let mut quality_level = 0;
     for blueprint in blueprints.iter() {
         let geodes = maximize_geodes(blueprint, 24);
-        // println!("Blueprint {}: {}", blueprint.id, geodes);
+        println!("Blueprint {}: {}", blueprint.id, geodes);
         quality_level += blueprint.id * geodes;
     }
     quality_level
@@ -271,6 +271,7 @@ fn part_two(blueprints: &[Blueprint]) -> u32 {
     let mut answer: u32 = 1;
     for blueprint in blueprints.iter().take(3) {
         let geodes = maximize_geodes(blueprint, 32);
+        println!("Blueprint {}: {}", blueprint.id, geodes);
         answer *= geodes;
     }
     answer
