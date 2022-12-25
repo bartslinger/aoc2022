@@ -108,69 +108,61 @@ fn shout_vars(monkeys: &Monkeys, name: String) -> Box<Var> {
 fn simplify(input: Box<Var>) -> Box<Var> {
     match input.borrow() {
         Var::Humn | Var::Number(_) => input,
-        Var::Multiply(a_var, b_var) => {
-            let a = a_var.borrow();
-            let b = b_var.borrow();
-            match (a, b) {
+        Var::Multiply(box_a, box_b) => {
+            let var_a = box_a.borrow();
+            let var_b = box_b.borrow();
+            match (var_a, var_b) {
                 (Var::Number(x), Var::Number(y)) => Box::new(Var::Number(x * y)),
                 _ => {
-                    let a_simplified = simplify(a_var.clone());
-                    let b_simplified = simplify(b_var.clone());
+                    let a_simplified = simplify(box_a.clone());
+                    let b_simplified = simplify(box_b.clone());
                     match (a_simplified.borrow(), b_simplified.borrow()) {
-                        (&Var::Number(_), &Var::Number(_)) => {
-                            simplify(Box::new(Var::Multiply(a_simplified, b_simplified)))
-                        }
+                        (&Var::Number(x), &Var::Number(y)) => Box::new(Var::Number(x * y)),
                         _ => Box::new(Var::Multiply(a_simplified, b_simplified)),
                     }
                 }
             }
         }
-        Var::Divide(a, b) => {
-            let a = a.borrow();
-            let b = b.borrow();
-            match (a, b) {
+        Var::Divide(box_a, box_b) => {
+            let var_a = box_a.borrow();
+            let var_b = box_b.borrow();
+            match (var_a, var_b) {
                 (Var::Number(x), Var::Number(y)) => Box::new(Var::Number(x / y)),
                 _ => {
-                    let a_simplified = simplify(Box::new(a.clone()));
-                    let b_simplified = simplify(Box::new(b.clone()));
+                    let a_simplified = simplify(box_a.clone());
+                    let b_simplified = simplify(box_b.clone());
                     match (a_simplified.borrow(), b_simplified.borrow()) {
-                        (&Var::Number(_), &Var::Number(_)) => {
-                            simplify(Box::new(Var::Divide(a_simplified, b_simplified)))
-                        }
+                        (&Var::Number(x), &Var::Number(y)) => Box::new(Var::Number(x / y)),
                         _ => Box::new(Var::Divide(a_simplified, b_simplified)),
                     }
                 }
             }
         }
-        Var::Add(a, b) => {
-            let a = a.borrow();
-            let b = b.borrow();
-            match (a, b) {
+        Var::Add(box_a, box_b) => {
+            let var_a = box_a.borrow();
+            let var_b = box_b.borrow();
+            match (var_a, var_b) {
                 (Var::Number(x), Var::Number(y)) => Box::new(Var::Number(x + y)),
                 _ => {
-                    let a_simplified = simplify(Box::new(a.clone()));
-                    let b_simplified = simplify(Box::new(b.clone()));
+                    let a_simplified = simplify(box_a.clone());
+                    let b_simplified = simplify(box_b.clone());
                     match (a_simplified.borrow(), b_simplified.borrow()) {
-                        (&Var::Number(_), &Var::Number(_)) => {
-                            simplify(Box::new(Var::Add(a_simplified, b_simplified)))
-                        }
+                        (&Var::Number(x), &Var::Number(y)) => Box::new(Var::Number(x + y)),
                         _ => Box::new(Var::Add(a_simplified, b_simplified)),
                     }
                 }
             }
         }
-        Var::Sub(a, b) => {
-            let a = a.borrow();
-            let b = b.borrow();
-            match (a, b) {
+        Var::Sub(box_a, box_b) => {
+            let var_a = box_a.borrow();
+            let var_b = box_b.borrow();
+            match (var_a, var_b) {
                 (Var::Number(x), Var::Number(y)) => Box::new(Var::Number(x - y)),
                 _ => {
-                    let a_simplified = simplify(Box::new(a.clone()));
-                    let b_simplified = simplify(Box::new(b.clone()));
+                    let a_simplified = simplify(box_a.clone());
+                    let b_simplified = simplify(box_b.clone());
                     match (a_simplified.borrow(), b_simplified.borrow()) {
-                        (&Var::Number(_), &Var::Number(_)) => {
-                            simplify(Box::new(Var::Sub(a_simplified, b_simplified)))
-                        }
+                        (&Var::Number(x), &Var::Number(y)) => Box::new(Var::Number(x - y)),
                         _ => Box::new(Var::Sub(a_simplified, b_simplified)),
                     }
                 }
@@ -182,13 +174,13 @@ fn simplify(input: Box<Var>) -> Box<Var> {
 fn inverse(input: Box<Var>, input_number: i64) -> i64 {
     let input = input.borrow();
 
-    // One should be a number, the other should be a variable
     let (number, equation) = match input {
         Var::Multiply(box_a, box_b) => {
             let var_a = box_a.borrow();
             let var_b = box_b.borrow();
             match (var_a, var_b) {
-                (Var::Number(x), eq) | (eq, Var::Number(x)) => (input_number / x, eq),
+                (eq, Var::Number(x)) => (input_number / x, eq),
+                (Var::Number(x), eq) => (input_number / x, eq),
                 _ => panic!(),
             }
         }
@@ -196,7 +188,8 @@ fn inverse(input: Box<Var>, input_number: i64) -> i64 {
             let var_a = box_a.borrow();
             let var_b = box_b.borrow();
             match (var_a, var_b) {
-                (Var::Number(x), eq) | (eq, Var::Number(x)) => (input_number * x, eq),
+                (eq, Var::Number(x)) => (input_number * x, eq),
+                (Var::Number(x), eq) => (x / input_number, eq),
                 _ => panic!(),
             }
         }
@@ -204,7 +197,8 @@ fn inverse(input: Box<Var>, input_number: i64) -> i64 {
             let var_a = box_a.borrow();
             let var_b = box_b.borrow();
             match (var_a, var_b) {
-                (Var::Number(x), eq) | (eq, Var::Number(x)) => (input_number - x, eq),
+                (eq, Var::Number(x)) => (input_number - x, eq),
+                (Var::Number(x), eq) => (input_number - x, eq),
                 _ => panic!(),
             }
         }
@@ -212,7 +206,8 @@ fn inverse(input: Box<Var>, input_number: i64) -> i64 {
             let var_a = box_a.borrow();
             let var_b = box_b.borrow();
             match (var_a, var_b) {
-                (Var::Number(x), eq) | (eq, Var::Number(x)) => (input_number + x, eq),
+                (eq, Var::Number(x)) => (input_number + x, eq),
+                (Var::Number(x), eq) => (x - input_number, eq),
                 _ => panic!(),
             }
         }
@@ -221,13 +216,8 @@ fn inverse(input: Box<Var>, input_number: i64) -> i64 {
     if matches!(equation, Var::Humn) {
         return number;
     }
-    inverse(Box::new(equation.clone()), number)
-}
 
-fn figure_out_humn(formula: Box<Var>, compare_to: i64) -> i64 {
-    // println!("Looking for answer: {}", compare_to);
-    // println!("Formula to solve with:\n{:#?}", formula);
-    inverse(formula, compare_to)
+    inverse(Box::new(equation.clone()), number)
 }
 
 fn equality_shout(monkeys: &Monkeys) -> i64 {
@@ -250,7 +240,16 @@ fn equality_shout(monkeys: &Monkeys) -> i64 {
         compare_to = *x;
     }
 
-    figure_out_humn(formula, compare_to)
+    let answer = inverse(formula, compare_to);
+
+    // verify answer
+    let mut monkeys = monkeys.clone();
+    monkeys.insert("humn".to_string(), Shout::Number(answer));
+    let left = shout(&monkeys, a.clone());
+    let right = shout(&monkeys, b.clone());
+    assert_eq!(left, right);
+
+    answer
 }
 
 fn main() {
@@ -261,14 +260,5 @@ fn main() {
     println!("Part 1: {}", root_shout);
 
     let humn_shout = equality_shout(&monkeys);
-
     println!("Part 2: {}", humn_shout);
-
-    // // verify answer
-    // let mut monkeys = monkeys.clone();
-    // monkeys.insert("humn".to_string(), Shout::Number(humn_shout));
-    // println!("{:?}", monkeys.get("humn"));
-    //
-    // let root_shout = shout(&monkeys, "root".to_string());
-    // println!("Verification: {}", root_shout);
 }
