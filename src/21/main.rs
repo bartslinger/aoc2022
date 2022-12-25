@@ -20,7 +20,7 @@ mod tests {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum Shout {
     Number(i64),
     Multiply(String, String),
@@ -101,7 +101,6 @@ fn shout_vars(monkeys: &Monkeys, name: String) -> Box<Var> {
             shout_vars(monkeys, a.clone()),
             shout_vars(monkeys, b.clone()),
         ),
-        _ => panic!("invalid"),
     };
     Box::new(var)
 }
@@ -180,28 +179,54 @@ fn simplify(input: Box<Var>) -> Box<Var> {
     }
 }
 
-fn inverse(input: Box<Var>, number: i64) -> i64 {
+fn inverse(input: Box<Var>, input_number: i64) -> i64 {
     let input = input.borrow();
-    match input {
-        Var::Divide(a_box, b_box) => {
-            let a_var = a_box.borrow();
-            let b_var = b_box.borrow();
-            match (a_var, b_var) {
-                (Var::Number(x), _) => {}
-                (_, Var::Number(x)) => {
-                    // let new_var =
-                    //     Box::new(Var::Add(a_box.clone(), Box::new(Var::Number(number * x))));
-                }
-                _ => panic!("invalid"),
+
+    // One should be a number, the other should be a variable
+    let (number, equation) = match input {
+        Var::Multiply(box_a, box_b) => {
+            let var_a = box_a.borrow();
+            let var_b = box_b.borrow();
+            match (var_a, var_b) {
+                (Var::Number(x), eq) | (eq, Var::Number(x)) => (input_number / x, eq),
+                _ => panic!(),
             }
-            0
         }
-        _ => 0,
+        Var::Divide(box_a, box_b) => {
+            let var_a = box_a.borrow();
+            let var_b = box_b.borrow();
+            match (var_a, var_b) {
+                (Var::Number(x), eq) | (eq, Var::Number(x)) => (input_number * x, eq),
+                _ => panic!(),
+            }
+        }
+        Var::Add(box_a, box_b) => {
+            let var_a = box_a.borrow();
+            let var_b = box_b.borrow();
+            match (var_a, var_b) {
+                (Var::Number(x), eq) | (eq, Var::Number(x)) => (input_number - x, eq),
+                _ => panic!(),
+            }
+        }
+        Var::Sub(box_a, box_b) => {
+            let var_a = box_a.borrow();
+            let var_b = box_b.borrow();
+            match (var_a, var_b) {
+                (Var::Number(x), eq) | (eq, Var::Number(x)) => (input_number + x, eq),
+                _ => panic!(),
+            }
+        }
+        _ => panic!(),
+    };
+    if matches!(equation, Var::Humn) {
+        return number;
     }
+    inverse(Box::new(equation.clone()), number)
 }
 
 fn figure_out_humn(formula: Box<Var>, compare_to: i64) -> i64 {
-    println!("{:#?}", formula);
+    // println!("Looking for answer: {}", compare_to);
+    // println!("Formula to solve with:\n{:#?}", formula);
     inverse(formula, compare_to)
 }
 
@@ -236,4 +261,14 @@ fn main() {
     println!("Part 1: {}", root_shout);
 
     let humn_shout = equality_shout(&monkeys);
+
+    println!("Part 2: {}", humn_shout);
+
+    // // verify answer
+    // let mut monkeys = monkeys.clone();
+    // monkeys.insert("humn".to_string(), Shout::Number(humn_shout));
+    // println!("{:?}", monkeys.get("humn"));
+    //
+    // let root_shout = shout(&monkeys, "root".to_string());
+    // println!("Verification: {}", root_shout);
 }
