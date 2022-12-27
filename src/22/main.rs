@@ -22,10 +22,10 @@ enum TileType {
 #[derive(Debug, Copy, Clone)]
 struct Tile {
     tile_type: TileType,
-    west: i32,
-    east: i32,
-    north: i32,
-    south: i32,
+    west: (i32, i32, i32),
+    east: (i32, i32, i32),
+    north: (i32, i32, i32),
+    south: (i32, i32, i32),
 }
 
 type MonkeyMap = HashMap<(i32, i32), Tile>;
@@ -51,28 +51,28 @@ fn parse_input(path: &str) -> (MonkeyMap, Instructions, (i32, i32)) {
                     // is there an item to the left?
                     let west = if let Some(left) = map.get(&(row as i32, col as i32 - 1)) {
                         let left = *left;
-                        for j in left.west..(col as i32) {
+                        for j in left.west.1..(col as i32) {
                             if let Some(item_left) = map.get_mut(&(row as i32, j)) {
-                                item_left.east = col as i32;
+                                item_left.east = (row as i32, col as i32, 0);
                             }
                         }
-                        left.west
+                        (row as i32, left.west.1, 0)
                     } else {
                         if row == 0 {
                             start_col = col as i32;
                         }
-                        col as i32
+                        (row as i32, col as i32, 0)
                     };
                     let north = if let Some(above) = map.get(&(row as i32 - 1, col as i32)) {
                         let above = *above;
-                        for i in above.north..(row as i32) {
+                        for i in above.north.0..(row as i32) {
                             if let Some(above_item) = map.get_mut(&(i, col as i32)) {
-                                above_item.south = row as i32;
+                                above_item.south = (row as i32, col as i32, 0);
                             }
                         }
                         above.north
                     } else {
-                        row as i32
+                        (row as i32, col as i32, 0)
                     };
                     let tile_type = if item == '.' {
                         TileType::Open
@@ -82,9 +82,9 @@ fn parse_input(path: &str) -> (MonkeyMap, Instructions, (i32, i32)) {
                     let tile = Tile {
                         tile_type,
                         west,
-                        east: col as i32,
+                        east: (row as i32, col as i32, 0),
                         north,
-                        south: row as i32,
+                        south: (row as i32, col as i32, 0),
                     };
                     map.insert((row as i32, col as i32), tile);
                 }
@@ -144,15 +144,16 @@ fn get_password(
                     } else {
                         // Wrap around, next tile depends on direction
                         let next_position = match direction {
-                            0 => (position.0, current_tile.west),
-                            1 => (current_tile.north, position.1),
-                            2 => (position.0, current_tile.east),
-                            3 => (current_tile.south, position.1),
+                            0 => current_tile.west,
+                            1 => current_tile.north,
+                            2 => current_tile.east,
+                            3 => current_tile.south,
                             _ => panic!("invalid direction"),
                         };
-                        let next_tile = monkey_map.get(&next_position).unwrap();
+                        let next_coordinate = (next_position.0, next_position.1);
+                        let next_tile = monkey_map.get(&next_coordinate).unwrap();
                         if next_tile.tile_type == TileType::Open {
-                            position = next_position;
+                            position = next_coordinate;
                             current_tile = next_tile;
                         }
                     }
