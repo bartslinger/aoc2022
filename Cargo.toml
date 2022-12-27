@@ -87,6 +87,10 @@ path = "src/20/main.rs"
 name = "21"
 path = "src/21/main.rs"
 
+[[bin]]
+name = "22"
+path = "src/22/main.rs"
+
 [dependencies]
 itertools = "0.10.5"
 petgraph = "0.6.2"
