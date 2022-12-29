@@ -7,9 +7,17 @@ mod tests {
     #[test]
     fn test_example() {
         let elves = parse_input("./src/23/test.txt");
-        let elves = spread_out(&elves, 10);
+        let (elves, _) = spread_out(&elves, Some(10));
 
         assert_eq!(count_ground_tiles(&elves), 110);
+    }
+
+    #[test]
+    fn find_required_rounds() {
+        let elves = parse_input("./src/23/test.txt");
+        let (_, rounds) = spread_out(&elves, None);
+
+        assert_eq!(rounds, 19);
     }
 }
 
@@ -99,11 +107,16 @@ fn propose_direction(elf: &mut Elf, direction: i32) {
     }
 }
 
-fn spread_out(input: &HashSet<(i32, i32)>, rounds: usize) -> HashSet<(i32, i32)> {
+fn spread_out(
+    input: &HashSet<(i32, i32)>,
+    rounds_limit: Option<usize>,
+) -> (HashSet<(i32, i32)>, usize) {
     let mut positions = input.clone();
+    let number_of_elves = positions.len();
     let mut direction = 0;
     let directions = [[0, 1, 2, 3], [1, 2, 3, 0], [2, 3, 0, 1], [3, 0, 1, 2]];
-    for _ in 0..rounds {
+    let mut rounds_finished = 0;
+    'rounds: loop {
         let mut elves: Vec<Elf> = positions
             .iter()
             .map(|p| Elf {
@@ -113,6 +126,7 @@ fn spread_out(input: &HashSet<(i32, i32)>, rounds: usize) -> HashSet<(i32, i32)>
             .collect();
 
         let mut proposals = HashMap::<(i32, i32), usize>::new();
+        let mut steady_elves = 0;
         for elf in &mut elves {
             let a = direction_possible(&positions, elf, directions[direction][0]);
             let b = direction_possible(&positions, elf, directions[direction][1]);
@@ -128,6 +142,11 @@ fn spread_out(input: &HashSet<(i32, i32)>, rounds: usize) -> HashSet<(i32, i32)>
                 } else if d {
                     propose_direction(elf, directions[direction][3]);
                 }
+            } else {
+                steady_elves += 1;
+            }
+            if steady_elves == number_of_elves {
+                break 'rounds;
             }
             if let Some(count) = proposals.get_mut(&elf.proposal) {
                 *count += 1;
@@ -152,8 +171,14 @@ fn spread_out(input: &HashSet<(i32, i32)>, rounds: usize) -> HashSet<(i32, i32)>
         // Update positions with elf locations
         let new_positions: HashSet<(i32, i32)> = elves.iter().map(|elf| elf.position).collect();
         positions = new_positions;
+        rounds_finished += 1;
+        if let Some(limit) = rounds_limit {
+            if rounds_finished == limit {
+                break;
+            }
+        }
     }
-    positions
+    (positions, rounds_finished)
 }
 
 #[allow(unused)]
@@ -191,8 +216,11 @@ fn count_ground_tiles(elves: &HashSet<(i32, i32)>) -> usize {
 fn main() {
     println!("Hello, day 23!");
 
-    let elves = parse_input("./input/23/input.txt");
-    let elves = spread_out(&elves, 10);
+    let input = parse_input("./input/23/input.txt");
+    let (elves, _) = spread_out(&input, Some(10));
     let ground_tiles = count_ground_tiles(&elves);
     println!("Part 1: {}", ground_tiles);
+
+    let (_, rounds) = spread_out(&input, None);
+    println!("Part 2: {}", rounds + 1);
 }
