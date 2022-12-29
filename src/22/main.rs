@@ -218,10 +218,10 @@ fn get_cube_map(monkey_map: &MonkeyMap, edge_length: usize) -> MonkeyMap {
     }
 
     for (from, to) in connected_edges {
-        let from_col = from.0 % edge_length as i32;
-        let from_row = from.0 / edge_length as i32;
-        let to_col = to.0 % edge_length as i32;
-        let to_row = to.0 / edge_length as i32;
+        let from_col = from.0 % 4;
+        let from_row = from.0 / 4;
+        let to_col = to.0 % 4;
+        let to_row = to.0 / 4;
 
         let to_vec: Vec<(i32, i32, i32)> = match to.1 {
             0 => {
