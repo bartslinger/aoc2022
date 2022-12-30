@@ -1,4 +1,3 @@
-use ndarray::Dim;
 use std::collections::{HashMap, HashSet};
 
 #[cfg(test)]
@@ -15,9 +14,30 @@ mod tests {
             current_best: usize::MAX,
             seen: HashSet::new(),
         };
-        find_fastest_path(&options, 1, &(0, 1), &dimensions, &mut state);
+        find_fastest_path(
+            &options,
+            1,
+            &(0, 1),
+            &(dimensions.rows - 1, dimensions.cols - 2),
+            &mut state,
+        );
 
         assert_eq!(state.current_best, 18);
+    }
+
+    #[test]
+    fn test_snack_retour() {
+        let (blizzards, dimensions) = parse_input("./src/24/test.txt");
+
+        let extrapolated = extrapolate_blizzards(&blizzards, &dimensions, 100);
+        let options = calculate_options(&extrapolated, &dimensions);
+        let time = find_fastest_snack_retour(
+            &options,
+            &(0, 1),
+            &(dimensions.rows - 1, dimensions.cols - 2),
+        );
+
+        assert_eq!(time, 54);
     }
 }
 #[derive(Debug)]
@@ -232,7 +252,7 @@ fn find_fastest_path(
     input: &Vec<Options>,
     time: usize,
     start_position: &(i32, i32),
-    dimensions: &Dimensions,
+    goal_position: &(i32, i32),
     mut state: &mut State,
 ) {
     let options = input.get(time - 1).unwrap().get(start_position).unwrap();
@@ -242,13 +262,65 @@ fn find_fastest_path(
             continue;
         }
         state.seen.insert((position.0, position.1, time));
-        if position.0 == dimensions.rows - 1 {
+        if position == goal_position {
             state.current_best = state.current_best.min(time);
         }
         if time < input.len() - 1 && time < state.current_best {
-            find_fastest_path(input, time + 1, position, dimensions, state);
+            find_fastest_path(input, time + 1, position, goal_position, state);
         }
     }
+}
+
+fn find_fastest_snack_retour(
+    options: &Vec<Options>,
+    start_position: &(i32, i32),
+    goal_position: &(i32, i32),
+) -> usize {
+    let mut total_time = 1;
+
+    // First run
+    let mut state = State {
+        current_best: usize::MAX,
+        seen: HashSet::new(),
+    };
+    find_fastest_path(
+        options,
+        total_time,
+        start_position,
+        goal_position,
+        &mut state,
+    );
+    total_time = state.current_best;
+
+    // Return for snacks
+    let mut state = State {
+        current_best: usize::MAX,
+        seen: HashSet::new(),
+    };
+    find_fastest_path(
+        options,
+        total_time,
+        goal_position,
+        start_position,
+        &mut state,
+    );
+    total_time = state.current_best;
+
+    // And finally back to the destination with snacks
+    let mut state = State {
+        current_best: usize::MAX,
+        seen: HashSet::new(),
+    };
+    find_fastest_path(
+        options,
+        total_time,
+        start_position,
+        goal_position,
+        &mut state,
+    );
+    total_time = state.current_best;
+
+    total_time
 }
 
 fn main() {
@@ -256,13 +328,26 @@ fn main() {
 
     let (blizzards, dimensions) = parse_input("./input/24/input.txt");
 
-    let extrapolated = extrapolate_blizzards(&blizzards, &dimensions, 500);
+    let extrapolated = extrapolate_blizzards(&blizzards, &dimensions, 2000);
     let options = calculate_options(&extrapolated, &dimensions);
 
     let mut state = State {
         current_best: usize::MAX,
         seen: HashSet::new(),
     };
-    find_fastest_path(&options, 1, &(0, 1), &dimensions, &mut state);
+    find_fastest_path(
+        &options,
+        1,
+        &(0, 1),
+        &(dimensions.rows - 1, dimensions.cols - 2),
+        &mut state,
+    );
     println!("Part 1: {}", state.current_best);
+
+    let time = find_fastest_snack_retour(
+        &options,
+        &(0, 1),
+        &(dimensions.rows - 1, dimensions.cols - 2),
+    );
+    println!("Part 2: {}", time);
 }
